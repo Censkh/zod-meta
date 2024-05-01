@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "lib": ["es6", "dom"],
+    "allowJs": true,
+    "moduleResolution": "node",
+    "module": "esnext",
+    "target": "ES5",
+    "strict": true,
+    "noUnusedLocals": true,
+    "declaration": true,
+    "jsx": "react",
+    "skipLibCheck": true
+  },
+  "include": ["src"],
+  "exclude": ["src/tests"]
+}
