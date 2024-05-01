@@ -1,10 +1,11 @@
 {
   "name": "zod-meta",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Get/set metadata on Zod schemas",
   "main": "cjs/index.js",
   "types": "esm/index.d.ts",
   "module": "esm/index.js",
+  "keywords": ["zod", "meta", "metadata", "schema"],
   "sideEffects": false,
   "scripts": {
     "prepublishOnly": "npm run check:fix && npm run test && npm run build",

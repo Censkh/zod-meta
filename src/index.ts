@@ -1,34 +1,33 @@
 import * as zod from "zod";
 
-export interface ZodMetaItem<TValue = unknown> {
-  definition: ZodMetaDefinition<TValue>;
-  value: TValue;
+export interface ZodMetaItem<TData = unknown> {
+  type: ZodMetaType<TData>;
+  data: TData;
 }
 
 export interface ZodMetaStore {
-  metaMap: Record<string, ZodMetaItem>,
-  metaList: ZodMetaItem[]
+  itemMap: Record<string, ZodMetaItem | undefined>,
+  itemList: ZodMetaItem[]
 }
 
 type ZodMetaDescription = string & {
   __meta: ZodMetaStore;
 };
 
-export interface ZodMetaDefinitionOptions<T> {
+export interface ZodMetaTypeOptions<TData> {
   id: string;
-  check?: ZodMetaCheck<T>;
+  check?: ZodMetaCheck<TData>;
 }
 
-type EmptyObject = Record<string, never>;
+export interface ZodMetaType<TData> extends ZodMetaTypeOptions<TData> {
+}
 
-export type ZodMetaDefinition<TValue> = (void extends TValue
-  ? () => ZodMetaItem<TValue>
-  : TValue extends EmptyObject
-    ? (value?: TValue) => ZodMetaItem<TValue>
-    : (value: TValue) => ZodMetaItem<TValue>) & {
-  id: string;
-  check: (type: zod.ZodType, value: TValue) => ZodMetaCheckResult;
-};
+export type ZodMetaFactory<TData> = (TData extends undefined
+  ? () => ZodMetaItem<TData>
+  : TData extends {}
+    ? (value?: TData) => ZodMetaItem<TData>
+    : (value: TData) => ZodMetaItem<TData>) & ZodMetaType<TData>;
+
 
 type ZodMetaCheckResult =
   | {
@@ -38,33 +37,35 @@ type ZodMetaCheckResult =
   success: false;
   message: string;
 };
-type ZodMetaCheck<TValue> = (type: zod.ZodType, value: TValue extends {} ? TValue | undefined : TValue) => ZodMetaCheckResult;
+type ZodMetaCheck<TData> = (type: zod.ZodType, value: TData extends {} ? TData | undefined : TData) => ZodMetaCheckResult;
 
-export const createZodMetaBuilder = <TValue = undefined>(definition: ZodMetaDefinitionOptions<TValue>): ZodMetaDefinition<TValue> => {
-  // @ts-ignore
-  return Object.assign((value: TValue) => {
+
+export const createMetaType = <TData = undefined>(type: ZodMetaTypeOptions<TData>): ZodMetaFactory<TData> => {
+  return Object.assign((value: TData) => {
     return {
-      definition,
-      value: value,
-    } as ZodMetaItem<TValue>;
-  }, definition);
+      type: type,
+      data: value ?? {},
+    } as ZodMetaItem<TData>;
+  }, type) as ZodMetaFactory<TData>;
 };
 
 const createZodMetaDescription = (meta: ZodMetaStore): ZodMetaDescription => {
   return Object.assign("", {
     __meta: meta,
   });
-}
+};
 
 export const meta = (meta: ZodMetaItem[]): ZodMetaDescription => {
   const metaMap = meta.reduce((acc, meta) => {
-    acc[meta.definition.id] = meta;
+    acc[meta.type.id] = meta;
     return acc;
   }, {} as Record<string, ZodMetaItem>);
   return createZodMetaDescription({
-    metaMap,
-    metaList: meta,
-  })
+    itemMap: metaMap,
+    get itemList() {
+      return Object.values(metaMap);
+    },
+  });
 };
 
 export const getMetaStore = (schema: zod.ZodType): ZodMetaStore | undefined => {
@@ -76,8 +77,8 @@ export const ensureMetaStore = (schema: zod.ZodType): ZodMetaStore => {
   let meta = getMetaStore(schema);
   if (!meta) {
     meta = {
-      metaMap: {},
-      metaList: [],
+      itemMap: {},
+      itemList: [],
     };
     if (!schema._def) {
       throw new Error("Schema has no definition");
@@ -86,62 +87,81 @@ export const ensureMetaStore = (schema: zod.ZodType): ZodMetaStore => {
     schema._def.description = createZodMetaDescription(meta);
   }
   return meta;
-}
+};
 
-export const getMetaItem = <TValue>(schema: zod.ZodType, metaDef: ZodMetaDefinition<TValue>): ZodMetaItem<TValue> | undefined => {
+export const getMetaItem = <TData>(schema: zod.ZodType, type: ZodMetaType<TData>): ZodMetaItem<TData> | undefined => {
   const meta = getMetaStore(schema);
   if (!meta) {
     return;
   }
-  return meta.metaMap[metaDef.id] as (ZodMetaItem<TValue> | undefined);
+  return meta.itemMap[type.id] as (ZodMetaItem<TData> | undefined);
 };
 
-export const setMetaItem = <TValue>(schema: zod.ZodType, meta: ZodMetaItem<TValue>): zod.ZodType => {
+export const setMetaItem = <TData>(schema: zod.ZodType, meta: ZodMetaItem<TData>): void => {
   let metaStore = ensureMetaStore(schema);
-  const exisingMeta = metaStore.metaMap[meta.definition.id];
-  if (exisingMeta) {
-    metaStore.metaList.splice(metaStore.metaList.indexOf(exisingMeta), 1);
-  }
+  metaStore.itemMap[meta.type.id] = meta as any;
+};
 
-  metaStore.metaMap[meta.definition.id] = meta as any;
-  metaStore.metaList.push(meta as any);
-  return schema;
-}
-
-export const removeMetaItem = <TValue>(schema: zod.ZodType, metaDef: ZodMetaDefinition<TValue>) => {
+export const removeMetaItem = <TData>(schema: zod.ZodType, type: ZodMetaType<TData>) => {
   const meta = getMetaStore(schema);
   if (!meta) {
-    return ;
+    return;
   }
-  const metaItem = meta.metaMap[metaDef.id];
+  const metaItem = meta.itemMap[type.id];
   if (metaItem) {
-    delete meta.metaMap[metaDef.id];
-    meta.metaList.splice(meta.metaList.indexOf(metaItem), 1);
+    meta.itemMap[type.id] = undefined;
   }
-}
+};
 
 
-export interface FindFieldMetaResult<TValue> {
-  meta: ZodMetaItem<TValue>;
+export interface FindFieldMetaResult<TData> {
+  meta: ZodMetaItem<TData>;
   key: string;
-  value: TValue;
+  data: TData;
   schema: zod.ZodType;
 }
 
-export const findFieldMeta = <TValue>(
+export const findFieldMetaItem = <TData>(
   schema: zod.ZodObject<any>,
-  metaDef: ZodMetaDefinition<TValue>,
-): FindFieldMetaResult<TValue> | undefined => {
+  type: ZodMetaType<TData>,
+): FindFieldMetaResult<TData> | undefined => {
+  if (!schema._def.shape) {
+    return;
+  }
+
   for (const key in schema._def.shape()) {
     const value = schema._def.shape()[key];
-    const meta = getMetaItem(value, metaDef);
+    const meta = getMetaItem(value, type);
     if (meta) {
       return {
         meta,
         key,
         schema: value,
-        value: meta.value,
+        data: meta.data,
       };
     }
   }
+};
+
+export const findFieldMetaItems = <TData>(
+  schema: zod.ZodObject<any>,
+  type: ZodMetaType<TData>,
+): FindFieldMetaResult<TData>[] => {
+  if (!schema._def.shape) {
+    return [];
+  }
+  const results: FindFieldMetaResult<TData>[] = [];
+  for (const key in schema._def.shape()) {
+    const value = schema._def.shape()[key];
+    const meta = getMetaItem(value, type);
+    if (meta) {
+      results.push({
+        meta,
+        key,
+        schema: value,
+        data: meta.data,
+      });
+    }
+  }
+  return results;
 };
