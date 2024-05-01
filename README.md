@@ -46,7 +46,7 @@ const primaryKeyField = findFieldMetaItem(schema, primaryKey);
 
 console.log(primaryKeyField.key); // "id"
 console.log(primaryKeyField.data.autoIncrement); // true
-console.log(primaryKeyField.name);
+console.log(primaryKeyField.schema); // ZodNumber
 
 ```
 
