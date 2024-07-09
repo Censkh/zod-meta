@@ -1,13 +1,13 @@
-import * as zod from "zod";
+import type * as zod from "zod";
 
-export interface ZodMetaItem<TData = unknown> {
+export interface ZodMetaItem<TData = any> {
   type: ZodMetaType<TData>;
   data: TData;
 }
 
 export interface ZodMetaStore {
-  itemMap: Record<string, ZodMetaItem | undefined>,
-  itemList: ZodMetaItem[]
+  itemMap: Record<string, ZodMetaItem | undefined>;
+  itemList: ZodMetaItem[];
 }
 
 type ZodMetaDescription = string & {
@@ -19,26 +19,27 @@ export interface ZodMetaTypeOptions<TData> {
   check?: ZodMetaCheck<TData>;
 }
 
-export interface ZodMetaType<TData> extends ZodMetaTypeOptions<TData> {
-}
+export interface ZodMetaType<TData> extends ZodMetaTypeOptions<TData> {}
 
 export type ZodMetaFactory<TData> = (TData extends undefined
   ? () => ZodMetaItem<TData>
   : TData extends {}
     ? (value?: TData) => ZodMetaItem<TData>
-    : (value: TData) => ZodMetaItem<TData>) & ZodMetaType<TData>;
-
+    : (value: TData) => ZodMetaItem<TData>) &
+  ZodMetaType<TData>;
 
 type ZodMetaCheckResult =
   | {
-  success: true;
-}
+      success: true;
+    }
   | {
-  success: false;
-  message: string;
-};
-type ZodMetaCheck<TData> = (type: zod.ZodType, value: TData extends {} ? TData | undefined : TData) => ZodMetaCheckResult;
-
+      success: false;
+      message: string;
+    };
+type ZodMetaCheck<TData> = (
+  type: zod.ZodType,
+  value: TData extends {} ? TData | undefined : TData,
+) => ZodMetaCheckResult;
 
 export const createMetaType = <TData = undefined>(type: ZodMetaTypeOptions<TData>): ZodMetaFactory<TData> => {
   return Object.assign((value: TData) => {
@@ -56,10 +57,13 @@ const createZodMetaDescription = (meta: ZodMetaStore): ZodMetaDescription => {
 };
 
 export const meta = (meta: ZodMetaItem[]): ZodMetaDescription => {
-  const metaMap = meta.reduce((acc, meta) => {
-    acc[meta.type.id] = meta;
-    return acc;
-  }, {} as Record<string, ZodMetaItem>);
+  const metaMap = meta.reduce(
+    (acc, meta) => {
+      acc[meta.type.id] = meta;
+      return acc;
+    },
+    {} as Record<string, ZodMetaItem>,
+  );
   return createZodMetaDescription({
     itemMap: metaMap,
     get itemList() {
@@ -94,11 +98,11 @@ export const getMetaItem = <TData>(schema: zod.ZodType, type: ZodMetaType<TData>
   if (!meta) {
     return;
   }
-  return meta.itemMap[type.id] as (ZodMetaItem<TData> | undefined);
+  return meta.itemMap[type.id] as ZodMetaItem<TData> | undefined;
 };
 
 export const setMetaItem = <TData>(schema: zod.ZodType, meta: ZodMetaItem<TData>): void => {
-  let metaStore = ensureMetaStore(schema);
+  const metaStore = ensureMetaStore(schema);
   metaStore.itemMap[meta.type.id] = meta as any;
 };
 
@@ -112,7 +116,6 @@ export const removeMetaItem = <TData>(schema: zod.ZodType, type: ZodMetaType<TDa
     meta.itemMap[type.id] = undefined;
   }
 };
-
 
 export interface FindFieldMetaResult<TData> {
   meta: ZodMetaItem<TData>;
