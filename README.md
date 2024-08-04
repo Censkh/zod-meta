@@ -17,7 +17,7 @@ export interface PrimaryKeyData {
   autoIncrement?: boolean;
 }
 
-export const primaryKey = createMetaType<PrimaryKeydata>({
+export const primaryKey = createMetaType<PrimaryKeyData>({
   id: "primaryKey",
 });
 ```

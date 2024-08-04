@@ -28,10 +28,10 @@ export type ZodMetaFactory<TData> = (TData extends undefined
     : (value: TData) => ZodMetaItem<TData>) &
   ZodMetaType<TData>;
 
-type ZodMetaCheckResult =
+export type ZodMetaCheckResult =
   | {
       success: true;
-      message: undefined;
+      message?: undefined;
     }
   | {
       success: false;
