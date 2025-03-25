@@ -1,4 +1,4 @@
-import type * as zod from "zod";
+import * as zod from "zod";
 
 export interface ZodMetaItem<TData = any> {
   type: ZodMetaType<TData>;
@@ -126,21 +126,16 @@ export interface FindFieldMetaResult<TData> {
 }
 
 export const findFieldMetaItem = <TData>(
-  schema: zod.ZodObject<any>,
+  schema: zod.ZodType,
   type: ZodMetaType<TData>,
 ): FindFieldMetaResult<TData> | undefined => {
-  if (!schema._def.shape) {
-    return;
-  }
-
-  for (const key in schema._def.shape()) {
-    const value = schema._def.shape()[key];
-    const meta = getMetaItem(value, type);
+  for (const field of getZodTypeFields(schema)) {
+    const meta = getMetaItem(field.schema, type);
     if (meta) {
       return {
         meta,
-        key,
-        schema: value,
+        key: field.key,
+        schema: field.schema,
         data: meta.data,
       };
     }
@@ -148,24 +143,47 @@ export const findFieldMetaItem = <TData>(
 };
 
 export const findFieldMetaItems = <TData>(
-  schema: zod.ZodObject<any>,
+  schema: zod.ZodType,
   type: ZodMetaType<TData>,
 ): FindFieldMetaResult<TData>[] => {
-  if (!schema._def.shape) {
-    return [];
-  }
   const results: FindFieldMetaResult<TData>[] = [];
-  for (const key in schema._def.shape()) {
-    const value = schema._def.shape()[key];
-    const meta = getMetaItem(value, type);
+  for (const field of getZodTypeFields(schema)) {
+    const meta = getMetaItem(field.schema, type);
     if (meta) {
       results.push({
         meta,
-        key,
-        schema: value,
+        key: field.key,
+        schema: field.schema,
         data: meta.data,
       });
     }
   }
   return results;
+};
+
+export interface ZodField {
+  key: string;
+  schema: zod.ZodType;
+}
+
+const getZodTypeFieldsInternal = (schema: zod.ZodType, allFields?: ZodField[]): ZodField[] => {
+  const result = allFields ?? [];
+
+  if (schema instanceof zod.ZodObject) {
+    for (const [key, value] of Object.entries(schema._def.shape())) {
+      result.push({
+        key,
+        schema: value as any,
+      });
+    }
+  } else if (schema instanceof zod.ZodIntersection) {
+    getZodTypeFieldsInternal(schema._def.left, result);
+    getZodTypeFieldsInternal(schema._def.right, result);
+  }
+
+  return result;
+};
+
+export const getZodTypeFields = (schema: zod.ZodType): ZodField[] => {
+  return getZodTypeFieldsInternal(schema);
 };

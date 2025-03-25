@@ -1,6 +1,6 @@
 {
   "name": "zod-meta",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Get/set metadata on Zod schemas",
   "main": "cjs/index.js",
   "types": "esm/index.d.ts",
@@ -10,7 +10,7 @@
   "scripts": {
     "prepublishOnly": "npm run check:fix && npm run test && npm run build",
     "test": "jest",
-    "check:fix": "tsc --noEmit --project tsconfig.json && npx @biomejs/biome check --apply .",
+    "check:fix": "tsc --noEmit --project tsconfig.json && npx @biomejs/biome check --write .",
     "check": "tsc --noEmit --project tsconfig.json && npx @biomejs/biome check .",
     "cleanup": "rimraf esm && rimraf cjs",
     "build": "npm run cleanup && npm run build:esm && npm run build:cjs",
@@ -30,12 +30,12 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.8.3",
-    "@swc/core": "^1.7.0",
-    "@swc/jest": "^0.2.36",
-    "@types/jest": "^29.5.12",
+    "@biomejs/biome": "^1.9.4",
+    "@swc/core": "^1.11.13",
+    "@swc/jest": "^0.2.37",
+    "@types/jest": "^29.5.14",
     "jest": "^29.7.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.5.3"
+    "typescript": "^5.8.2"
   }
 }
