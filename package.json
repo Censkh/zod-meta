@@ -1,6 +1,6 @@
 {
   "name": "zod-meta",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Get/set metadata on Zod schemas",
   "main": "cjs/index.js",
   "types": "esm/index.d.ts",

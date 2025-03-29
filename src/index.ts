@@ -1,4 +1,4 @@
-import * as zod from "zod";
+import type * as zod from "zod";
 
 export interface ZodMetaItem<TData = any> {
   type: ZodMetaType<TData>;
@@ -166,17 +166,25 @@ export interface ZodField {
   schema: zod.ZodType;
 }
 
+const isZodObject = (schema: any): schema is zod.ZodObject<any> => {
+  return schema?._def?.typeName === "ZodObject";
+};
+
+const isZodIntersection = (schema: any): schema is zod.ZodIntersection<any, any> => {
+  return schema?._def?.typeName === "ZodIntersection";
+};
+
 const getZodTypeFieldsInternal = (schema: zod.ZodType, allFields?: ZodField[]): ZodField[] => {
   const result = allFields ?? [];
 
-  if (schema instanceof zod.ZodObject) {
+  if (isZodObject(schema)) {
     for (const [key, value] of Object.entries(schema._def.shape())) {
       result.push({
         key,
         schema: value as any,
       });
     }
-  } else if (schema instanceof zod.ZodIntersection) {
+  } else if (isZodIntersection(schema)) {
     getZodTypeFieldsInternal(schema._def.left, result);
     getZodTypeFieldsInternal(schema._def.right, result);
   }

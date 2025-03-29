@@ -4,6 +4,7 @@ import {
   findFieldMetaItem,
   getMetaItem,
   getMetaStore,
+  getZodTypeFields,
   meta,
   removeMetaItem,
   setMetaItem,
@@ -88,4 +89,22 @@ it("4. duplicates", () => {
       {},
     ],
   });
+});
+
+it("5. get zod fields", () => {
+  const zodFields = getZodTypeFields(
+    zod.object({
+      id: zod.string().describe(meta([])),
+      name: zod.string().describe(meta([])),
+    }),
+  );
+
+  expect(zodFields).toMatchObject([
+    {
+      key: "id",
+    },
+    {
+      key: "name",
+    },
+  ]);
 });
