@@ -1,5 +1,7 @@
 import type * as zod from "zod";
 
+export const ZOD_META_KEY = "__zod_meta__" as const;
+
 export interface ZodMetaItem<TData = any> {
   type: ZodMetaType<TData>;
   data: TData;
@@ -9,10 +11,6 @@ export interface ZodMetaStore {
   itemMap: Record<string, ZodMetaItem | undefined>;
   itemList: ZodMetaItem[];
 }
-
-type ZodMetaDescription = string & {
-  __meta: ZodMetaStore;
-};
 
 export interface ZodMetaTypeOptions<TData> {
   id: string;
@@ -51,13 +49,11 @@ export const createMetaType = <TData = undefined>(type: ZodMetaTypeOptions<TData
   }, type) as ZodMetaFactory<TData>;
 };
 
-const createZodMetaDescription = (meta: ZodMetaStore): ZodMetaDescription => {
-  return Object.assign("", {
-    __meta: meta,
-  });
-};
-
-export const meta = (meta: ZodMetaItem[]): ZodMetaDescription => {
+export const meta = (
+  meta: ZodMetaItem[],
+): {
+  [ZOD_META_KEY]: ZodMetaStore;
+} => {
   const metaMap = meta.reduce(
     (acc, meta) => {
       acc[meta.type.id] = meta;
@@ -65,17 +61,18 @@ export const meta = (meta: ZodMetaItem[]): ZodMetaDescription => {
     },
     {} as Record<string, ZodMetaItem>,
   );
-  return createZodMetaDescription({
-    itemMap: metaMap,
-    get itemList() {
-      return Object.values(metaMap);
+  return {
+    [ZOD_META_KEY]: {
+      itemMap: metaMap,
+      get itemList() {
+        return Object.values(metaMap);
+      },
     },
-  });
+  };
 };
 
 export const getMetaStore = (schema: zod.ZodType): ZodMetaStore | undefined => {
-  const meta = (schema as any)._def?.description as ZodMetaDescription | undefined;
-  return meta?.__meta;
+  return schema.meta()?.[ZOD_META_KEY] as ZodMetaStore | undefined;
 };
 
 export const ensureMetaStore = (schema: zod.ZodType): ZodMetaStore => {
@@ -89,7 +86,10 @@ export const ensureMetaStore = (schema: zod.ZodType): ZodMetaStore => {
       throw new Error("Schema has no definition");
     }
 
-    schema._def.description = createZodMetaDescription(meta);
+    schema.meta({
+      ...schema.meta(),
+      [ZOD_META_KEY]: meta,
+    });
   }
   return meta;
 };
@@ -166,27 +166,27 @@ export interface ZodField {
   schema: zod.ZodType;
 }
 
-const isZodObject = (schema: any): schema is zod.ZodObject<any> => {
-  return schema?._def?.typeName === "ZodObject";
+const isZodObject = (schema: zod.ZodType): schema is zod.ZodObject<any> => {
+  return schema?.def.type === "object";
 };
 
-const isZodIntersection = (schema: any): schema is zod.ZodIntersection<any, any> => {
-  return schema?._def?.typeName === "ZodIntersection";
+const isZodIntersection = (schema: zod.ZodType): schema is zod.ZodIntersection<any, any> => {
+  return schema?.def.type === "intersection";
 };
 
 const getZodTypeFieldsInternal = (schema: zod.ZodType, allFields?: ZodField[]): ZodField[] => {
   const result = allFields ?? [];
 
   if (isZodObject(schema)) {
-    for (const [key, value] of Object.entries(schema._def.shape())) {
+    for (const [key, value] of Object.entries(schema.def.shape)) {
       result.push({
         key,
         schema: value as any,
       });
     }
   } else if (isZodIntersection(schema)) {
-    getZodTypeFieldsInternal(schema._def.left, result);
-    getZodTypeFieldsInternal(schema._def.right, result);
+    getZodTypeFieldsInternal(schema.def.left as any, result);
+    getZodTypeFieldsInternal(schema.def.right as any, result);
   }
 
   return result;

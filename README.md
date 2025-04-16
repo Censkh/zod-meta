@@ -1,6 +1,8 @@
 # zod-meta
 
-Get/set metadata on Zod schemas
+Structured metadata for Zod schemas
+
+**Note:** Supports Zod v4 and above
 
 ## Get Started
 
@@ -29,7 +31,7 @@ import * as z from "zod";
 import {primaryKey} from "./primaryKey";
 
 const schema = z.object({
-  id: z.number().describe(meta([
+  id: z.number().meta(meta([
     primaryKey({ autoIncrement: true })
   ])),
   name: z.string(),

@@ -17,7 +17,7 @@ it("1. getMetaItem", () => {
     id: "primaryKey",
   });
 
-  const uuidField = zod.string().describe(meta([primaryKey()]));
+  const uuidField = zod.string().meta(meta([primaryKey()]));
 
   expect(getMetaItem(uuidField, primaryKey)?.data).toEqual({});
 
@@ -36,7 +36,7 @@ it("2. find", () => {
   });
 
   const schema = zod.object({
-    id: zod.string().describe(meta([primaryKey({ alias: "id" })])),
+    id: zod.string().meta(meta([primaryKey({ alias: "id" })])),
   });
 
   expect(findFieldMetaItem(schema, primaryKey)?.data).toEqual({
@@ -51,7 +51,7 @@ it("3. remove", () => {
     id: "primaryKey",
   });
 
-  const uuidField = zod.string().describe(meta([primaryKey({ alias: "id" })]));
+  const uuidField = zod.string().meta(meta([primaryKey({ alias: "id" })]));
 
   expect(getMetaItem(uuidField, primaryKey)?.data).toEqual({
     alias: "id",
@@ -73,7 +73,7 @@ it("4. duplicates", () => {
     id: "required",
   });
 
-  const uuidField = zod.string().describe(meta([number({ value: 1 }), required(), number({ value: 2 })]));
+  const uuidField = zod.string().meta(meta([number({ value: 1 }), required(), number({ value: 2 })]));
   const store = getMetaStore(uuidField);
   expect(store).toMatchObject({
     itemMap: {
@@ -94,8 +94,8 @@ it("4. duplicates", () => {
 it("5. get zod fields", () => {
   const zodFields = getZodTypeFields(
     zod.object({
-      id: zod.string().describe(meta([])),
-      name: zod.string().describe(meta([])),
+      id: zod.string().meta(meta([])),
+      name: zod.string().meta(meta([])),
     }),
   );
 

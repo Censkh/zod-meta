@@ -1,7 +1,7 @@
 {
   "name": "zod-meta",
-  "version": "0.0.9",
-  "description": "Get/set metadata on Zod schemas",
+  "version": "0.1.0",
+  "description": "Structured metadata for Zod schemas",
   "main": "cjs/index.js",
   "types": "esm/index.d.ts",
   "module": "esm/index.js",
@@ -27,7 +27,7 @@
   "author": "James Waterhouse <09jwater@gmail.com>",
   "license": "MIT",
   "peerDependencies": {
-    "zod": "^3.23.8"
+    "zod": "^4.0.0-beta.20250415T232143"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
