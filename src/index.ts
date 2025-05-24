@@ -1,4 +1,4 @@
-import type * as zod from "zod";
+import type * as zod from "zod/v4";
 
 export const ZOD_META_KEY = "__zod_meta__" as const;
 

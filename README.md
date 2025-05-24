@@ -27,7 +27,7 @@ export const primaryKey = createMetaType<PrimaryKeyData>({
 2. Add some meta to your schema:
 
 ```typescript
-import * as z from "zod";
+import * as z from "zod/v4";
 import {primaryKey} from "./primaryKey";
 
 const schema = z.object({
