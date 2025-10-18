@@ -56,7 +56,9 @@ export const metaStore = (
 } => {
   const metaMap = meta.reduce(
     (acc, meta) => {
-      acc[meta.type.id] = meta;
+      if (meta) {
+        acc[meta.type.id] = meta;
+      }
       return acc;
     },
     {} as Record<string, ZodMetaItem>,
