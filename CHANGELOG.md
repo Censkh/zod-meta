@@ -1,3 +1,8 @@
+# 0.4.0
+
+- `meta()` is now `metaStore()`
+- `getMetaStore()` is now `getMetaStores()`
+
 # 0.2.0
 
 - use `zod/v4`

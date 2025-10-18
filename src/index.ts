@@ -49,7 +49,7 @@ export const createMetaType = <TData = undefined>(type: ZodMetaTypeOptions<TData
   }, type) as ZodMetaFactory<TData>;
 };
 
-export const meta = (
+export const metaStore = (
   meta: ZodMetaItem[],
 ): {
   [ZOD_META_KEY]: ZodMetaStore;
@@ -71,18 +71,36 @@ export const meta = (
   };
 };
 
-export const getMetaStore = (schema: zod.ZodType): ZodMetaStore | undefined => {
+const getMetaStoreFromSchema = (schema: zod.ZodType): ZodMetaStore | undefined => {
   return schema.meta()?.[ZOD_META_KEY] as ZodMetaStore | undefined;
 };
 
-export const ensureMetaStore = (schema: zod.ZodType): ZodMetaStore => {
-  let meta = getMetaStore(schema);
+export const getMetaStores = (schema: zod.ZodType): ZodMetaStore[] => {
+  const metaStores: ZodMetaStore[] = [];
+
+  // Get the main meta store from the schema itself
+  const mainMetaStore = getMetaStoreFromSchema(schema);
+  if (mainMetaStore) {
+    metaStores.push(mainMetaStore);
+  }
+
+  // @ts-expect-error
+  const innerType = schema.def.innerType;
+  if (innerType) {
+    metaStores.push(...getMetaStores(innerType));
+  }
+
+  return metaStores;
+};
+
+const ensureMetaStore = (schema: zod.ZodType): ZodMetaStore => {
+  let meta = getMetaStoreFromSchema(schema);
   if (!meta) {
     meta = {
       itemMap: {},
       itemList: [],
     };
-    if (!schema._def) {
+    if (!schema.def) {
       throw new Error("Schema has no definition");
     }
 
@@ -95,11 +113,17 @@ export const ensureMetaStore = (schema: zod.ZodType): ZodMetaStore => {
 };
 
 export const getMetaItem = <TData>(schema: zod.ZodType, type: ZodMetaType<TData>): ZodMetaItem<TData> | undefined => {
-  const meta = getMetaStore(schema);
-  if (!meta) {
-    return;
+  const metaStores = getMetaStores(schema);
+
+  // Search through all meta stores to find the item
+  for (const meta of metaStores) {
+    const item = meta.itemMap[type.id] as ZodMetaItem<TData> | undefined;
+    if (item) {
+      return item;
+    }
   }
-  return meta.itemMap[type.id] as ZodMetaItem<TData> | undefined;
+
+  return undefined;
 };
 
 export const setMetaItem = <TData>(schema: zod.ZodType, meta: ZodMetaItem<TData>): void => {
@@ -108,13 +132,14 @@ export const setMetaItem = <TData>(schema: zod.ZodType, meta: ZodMetaItem<TData>
 };
 
 export const removeMetaItem = <TData>(schema: zod.ZodType, type: ZodMetaType<TData>) => {
-  const meta = getMetaStore(schema);
-  if (!meta) {
-    return;
-  }
-  const metaItem = meta.itemMap[type.id];
-  if (metaItem) {
-    meta.itemMap[type.id] = undefined;
+  const metaStores = getMetaStores(schema);
+
+  // Remove from all meta stores
+  for (const meta of metaStores) {
+    const metaItem = meta.itemMap[type.id];
+    if (metaItem) {
+      meta.itemMap[type.id] = undefined;
+    }
   }
 };
 
